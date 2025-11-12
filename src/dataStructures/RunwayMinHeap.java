@@ -13,6 +13,8 @@ public class RunwayMinHeap {
 		this.positionMap = new HashMap<>();
 	}
 
+	// ================== External functions of Runway Min Heap====================
+
 	public int getRunwayCount() {
 		return this.heap.size();
 	}
@@ -52,6 +54,8 @@ public class RunwayMinHeap {
 		heap.clear();
 		positionMap.clear();
 	}
+
+	// ================== Internal functions of Runway Min Heap====================
 
 	private int parentInd(int i) {
 		return (i - 1) / 2;

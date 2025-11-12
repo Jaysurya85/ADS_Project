@@ -10,6 +10,8 @@ public class TimetableMinHeap {
 		this.heap = new ArrayList<>();
 	}
 
+	// ============= External functions of Timetable Min Heap====================
+
 	public void insert(Flight flight) {
 		heap.add(flight);
 		heapifyUp(heap.size() - 1);
@@ -56,7 +58,7 @@ public class TimetableMinHeap {
 		return true;
 	}
 
-	// Internal functions of Binary Heap
+	// ================= Internal functions of Binary Heap =============
 
 	private Flight extractMin() {
 		if (heap.isEmpty())

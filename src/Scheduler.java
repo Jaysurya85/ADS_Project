@@ -38,7 +38,7 @@ public class Scheduler {
 	}
 
 	public void submitFlight(int flightID, int airlineID, int submitTime, int priority, int duration) {
-		advanceTime(submitTime);
+		updateCurrentTime(submitTime);
 
 		if (activeFlights.containsKey(flightID)) {
 			this.output.println("Duplicate FlightID");
@@ -58,17 +58,14 @@ public class Scheduler {
 		handles.put(flightID, node);
 
 		// Schedule this flight
-		String updatedETA = rescheduleFlights();
-		output.println("Flight " + flightID + " scheduled - ETA: " + flight.getEndTime());
-		if (updatedETA.equals("")) {
-			return;
-		}
-		output.println(updatedETA);
+		ArrayList<String> updatedETAs = rescheduleFlights();
+		this.output.println("Flight " + flightID + " scheduled - ETA: " + flight.getEndTime());
+		printAllChangedETAs(updatedETAs);
 
 	}
 
 	public void cancelFlight(int flightID, int currentTime) {
-		advanceTime(currentTime);
+		updateCurrentTime(currentTime);
 
 		if (!this.activeFlights.containsKey(flightID)) {
 			this.output.println("Flight " + flightID + " does not exist");
@@ -94,16 +91,13 @@ public class Scheduler {
 			pendingFlights.erase(node);
 			handles.remove(flightID);
 		}
-		String updatedETA = rescheduleFlights();
+		ArrayList<String> updatedETAs = rescheduleFlights();
 		output.println("Flight " + flightID + " has been canceled");
-		if (updatedETA.equals("")) {
-			return;
-		}
-		output.println(updatedETA);
+		printAllChangedETAs(updatedETAs);
 	}
 
 	public void reprioritize(int flightID, int currentTime, int newPriority) {
-		advanceTime(currentTime);
+		updateCurrentTime(currentTime);
 
 		Flight flight = activeFlights.get(flightID);
 		if (flight == null) {
@@ -132,17 +126,14 @@ public class Scheduler {
 			}
 		}
 
-		String updatedETA = rescheduleFlights();
+		ArrayList<String> updatedETAs = rescheduleFlights();
 		this.output.println("Priority of Flight " + flightID + " has been updated to " + newPriority);
-		if (updatedETA.equals("")) {
-			return;
-		}
-		this.output.println(updatedETA);
+		printAllChangedETAs(updatedETAs);
 
 	}
 
 	public void addRunways(int count, int currentTime) {
-		advanceTime(currentTime);
+		updateCurrentTime(currentTime);
 
 		if (count <= 0) {
 			this.output.println("Invalid input. Please provide a valid number of runways.");
@@ -153,16 +144,14 @@ public class Scheduler {
 		for (int i = 0; i < count; i++) {
 			runways.insert(new Runway(currentRunwayCount + i + 1, currentTime));
 		}
-		String updatedETA = rescheduleFlights();
+		ArrayList<String> updatedETAs = rescheduleFlights();
 		this.output.println("Additional " + count + " Runways are now available");
-		if (updatedETA.equals("")) {
-			return;
-		}
-		this.output.println(updatedETA);
+		printAllChangedETAs(updatedETAs);
+
 	}
 
 	public void groundHold(int airlineLow, int airlineHigh, int currentTime) {
-		advanceTime(currentTime);
+		updateCurrentTime(currentTime);
 
 		if (airlineHigh < airlineLow) {
 			this.output.println("Invalid input. Please provide a valid airline range.");
@@ -201,13 +190,10 @@ public class Scheduler {
 			}
 		}
 
-		String updatedETA = rescheduleFlights();
+		ArrayList<String> updatedETAs = rescheduleFlights();
 		this.output.println(
 				"Flights of the airlines in the range [" + airlineLow + ", " + airlineHigh + "] have been grounded");
-		if (updatedETA.equals("")) {
-			return;
-		}
-		this.output.println(updatedETA);
+		printAllChangedETAs(updatedETAs);
 	}
 
 	public void printActive() {
@@ -262,18 +248,29 @@ public class Scheduler {
 	}
 
 	public void tick(int time) {
-		advanceTime(time);
+		updateCurrentTime(time);
+	}
+
+	public void quit() {
+		this.output.print("Program Terminated!!");
+		this.output.flush();
 	}
 
 	// Internal functions
 
-	private void advanceTime(int newTime) {
+	private void updateCurrentTime(int newTime) {
 		if (newTime < currentTime)
 			return;
 		currentTime = newTime;
 
+		// Need to complete all the flights between the old current time and the new
+		// time
 		settleCompletions();
+
+		// Need to start all flights between the old current time and the new time
 		promoteFlights();
+
+		// Need to reschedule the unsatisfied flights
 		rescheduleFlights();
 	}
 
@@ -304,18 +301,18 @@ public class Scheduler {
 		}
 	}
 
-	private String rescheduleFlights() {
+	private ArrayList<String> rescheduleFlights() {
 		ArrayList<Flight> toReschedule = new ArrayList<>();
 
 		// Store OLD ETAs before rescheduling (only for flights that were already
 		// scheduled)
-		HashMap<Integer, Integer> oldETAs = new HashMap<>();
+		HashMap<Integer, Integer> oldEndTimes = new HashMap<>();
 
 		// Collect all scheduled flights that haven't started yet
 		for (Flight flight : activeFlights.values()) {
 			if (flight.getLifeCycleState() == StatusType.SCHEDULED && flight.getStartTime() > currentTime) {
 				toReschedule.add(flight);
-				oldETAs.put(flight.getFlightID(), flight.getEndTime());
+				oldEndTimes.put(flight.getFlightID(), flight.getEndTime());
 			}
 		}
 
@@ -327,7 +324,7 @@ public class Scheduler {
 		}
 
 		if (toReschedule.isEmpty())
-			return "";
+			return new ArrayList<>();
 
 		// Sort by priority (DESCENDING), then submitTime (ASCENDING), then flightID
 		// (ASCENDING)
@@ -341,9 +338,18 @@ public class Scheduler {
 			return Integer.compare(f1.getFlightID(), f2.getFlightID()); // Lower ID first
 		});
 
+		rebuildTimeTableAndRunway();
+
+		ArrayList<String> endTimeUpdates = greedyAssignment(toReschedule, oldEndTimes);
+
+		return endTimeUpdates;
+	}
+
+	private void rebuildTimeTableAndRunway() {
+
 		// Rebuild timetable: keep only in-progress flights
 		TimetableMinHeap newTimetable = new TimetableMinHeap();
-		for (Flight flight : activeFlights.values()) {
+		for (Flight flight : this.activeFlights.values()) {
 			if (flight.getLifeCycleState() == StatusType.IN_PROGRESS) {
 				newTimetable.insert(flight);
 			}
@@ -351,17 +357,17 @@ public class Scheduler {
 		this.timetable = newTimetable;
 
 		// Rebuild runway pool
-		ArrayList<Runway> runwayList = runways.getAllRunways();
-		runways.deleteAllRunways();
+		ArrayList<Runway> runwayList = this.runways.getAllRunways();
+		this.runways.deleteAllRunways();
 
 		// Initialize runway times to currentTime
 		HashMap<Integer, Integer> runwayTimes = new HashMap<>();
 		for (Runway runway : runwayList) {
-			runwayTimes.put(runway.getRunwayID(), currentTime);
+			runwayTimes.put(runway.getRunwayID(), this.currentTime);
 		}
 
 		// Update runway times based on in-progress flights
-		for (Flight flight : activeFlights.values()) {
+		for (Flight flight : this.activeFlights.values()) {
 			if (flight.getLifeCycleState() == StatusType.IN_PROGRESS) {
 				int rid = flight.getRunwayID();
 				runwayTimes.put(rid, flight.getEndTime());
@@ -371,15 +377,17 @@ public class Scheduler {
 		// Insert runways back with updated times
 		for (Runway runway : runwayList) {
 			runway.setNextFreeTime(runwayTimes.get(runway.getRunwayID()));
-			runways.insert(runway);
+			this.runways.insert(runway);
 		}
+	}
+
+	private ArrayList<String> greedyAssignment(List<Flight> toReschedule, HashMap<Integer, Integer> oldEndTimes) {
 
 		ArrayList<String> endTimeUpdates = new ArrayList<>();
 
-		// Greedy assignment
 		for (Flight flight : toReschedule) {
-			Runway runway = runways.extractMin();
-			int startTime = Math.max(currentTime, runway.getNextFreeTime());
+			Runway runway = this.runways.extractMin();
+			int startTime = Math.max(this.currentTime, runway.getNextFreeTime());
 			int newEndTime = startTime + flight.getDuration();
 
 			flight.setStartTime(startTime);
@@ -388,18 +396,22 @@ public class Scheduler {
 			flight.setLifeCycleState(StatusType.SCHEDULED);
 
 			runway.setNextFreeTime(newEndTime);
-			runways.insert(runway);
+			this.runways.insert(runway);
 
-			timetable.insert(flight);
+			this.timetable.insert(flight);
 
 			// Only report ETA changes for flights that were ALREADY scheduled
-			if (oldETAs.containsKey(flight.getFlightID())) {
-				int oldETA = oldETAs.get(flight.getFlightID());
-				if (oldETA != newEndTime) {
+			if (oldEndTimes.containsKey(flight.getFlightID())) {
+				int oldEndTime = oldEndTimes.get(flight.getFlightID());
+				if (oldEndTime != newEndTime) {
 					endTimeUpdates.add(flight.getFlightID() + ": " + newEndTime);
 				}
 			}
 		}
+		return endTimeUpdates;
+	}
+
+	private void printAllChangedETAs(ArrayList<String> endTimeUpdates) {
 
 		if (!endTimeUpdates.isEmpty()) {
 			endTimeUpdates.sort((a, b) -> {
@@ -407,15 +419,8 @@ public class Scheduler {
 				int id2 = Integer.parseInt(b.split(":")[0]);
 				return Integer.compare(id1, id2);
 			});
-			String UpdatedETAOuptut = "Updated ETAs: [" + String.join(", ", endTimeUpdates) + "]";
-			return UpdatedETAOuptut;
+			this.output.println("Updated ETAs: [" + String.join(", ", endTimeUpdates) + "]");
 		}
-		return "";
-	}
-
-	public void quit() {
-		output.print("Program Terminated!!");
-		output.flush();
 	}
 }
 

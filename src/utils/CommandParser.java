@@ -7,6 +7,8 @@ import models.*;
 
 public class CommandParser {
 
+	// Based on the input given return appropriate CommandType
+
 	public CommandData parse(String line) {
 		if (line == null || line.trim().isEmpty()) {
 			return new CommandData(CommandType.UNKNOWN, null, line);
