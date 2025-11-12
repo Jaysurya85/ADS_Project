@@ -13,13 +13,13 @@ public class TimetableMinHeap {
 	// ============= External functions of Timetable Min Heap====================
 
 	public void insert(Flight flight) {
-		heap.add(flight);
-		heapifyUp(heap.size() - 1);
+		this.heap.add(flight);
+		heapifyUp(this.heap.size() - 1);
 	}
 
 	public ArrayList<Flight> popAllCompleted(int currentTime) {
 		ArrayList<Flight> completed = new ArrayList<>();
-		while (!heap.isEmpty() && heap.get(0).getEndTime() <= currentTime) {
+		while (!this.heap.isEmpty() && this.heap.get(0).getEndTime() <= currentTime) {
 			completed.add(extractMin());
 		}
 		return completed;
@@ -30,12 +30,12 @@ public class TimetableMinHeap {
 	}
 
 	public boolean remove(Flight flight) {
-		if (heap.isEmpty())
+		if (this.heap.isEmpty())
 			return false;
 
 		int index = -1;
-		for (int i = 0; i < heap.size(); i++) {
-			if (heap.get(i).getFlightID() == flight.getFlightID()) {
+		for (int i = 0; i < this.heap.size(); i++) {
+			if (this.heap.get(i).getFlightID() == flight.getFlightID()) {
 				index = i;
 				break;
 			}
@@ -43,14 +43,14 @@ public class TimetableMinHeap {
 		if (index == -1)
 			return false;
 
-		int lastIndex = heap.size() - 1;
+		int lastIndex = this.heap.size() - 1;
 		if (index != lastIndex) {
 			swap(index, lastIndex);
 		}
-		heap.remove(lastIndex);
+		this.heap.remove(lastIndex);
 
 		// restore heap property (both directions possible)
-		if (index < heap.size()) {
+		if (index < this.heap.size()) {
 			heapifyUp(index);
 			heapifyDown(index);
 		}
@@ -61,18 +61,18 @@ public class TimetableMinHeap {
 	// ================= Internal functions of Binary Heap =============
 
 	private Flight extractMin() {
-		if (heap.isEmpty())
+		if (this.heap.isEmpty())
 			return null;
 
-		Flight minFlight = heap.get(0);
+		Flight minFlight = this.heap.get(0);
 
-		if (heap.size() == 1) {
-			heap.clear();
+		if (this.heap.size() == 1) {
+			this.heap.clear();
 			return minFlight;
 		}
 
-		heap.set(0, heap.get(heap.size() - 1));
-		heap.remove(heap.size() - 1);
+		this.heap.set(0, this.heap.get(this.heap.size() - 1));
+		this.heap.remove(this.heap.size() - 1);
 		heapifyDown(0);
 
 		return minFlight;
@@ -98,13 +98,13 @@ public class TimetableMinHeap {
 	}
 
 	private void swap(int i, int j) {
-		Flight temp = heap.get(i);
-		heap.set(i, heap.get(j));
-		heap.set(j, temp);
+		Flight temp = this.heap.get(i);
+		this.heap.set(i, this.heap.get(j));
+		this.heap.set(j, temp);
 	}
 
 	private void heapifyUp(int i) {
-		while (i > 0 && compare(heap.get(i), heap.get(parent(i))) < 0) {
+		while (i > 0 && compare(this.heap.get(i), this.heap.get(parent(i))) < 0) {
 			swap(i, parent(i));
 			i = parent(i);
 		}
@@ -115,10 +115,10 @@ public class TimetableMinHeap {
 		int left = leftChild(i);
 		int right = rightChild(i);
 
-		if (left < heap.size() && compare(heap.get(left), heap.get(minIndex)) < 0) {
+		if (left < this.heap.size() && compare(this.heap.get(left), this.heap.get(minIndex)) < 0) {
 			minIndex = left;
 		}
-		if (right < heap.size() && compare(heap.get(right), heap.get(minIndex)) < 0) {
+		if (right < this.heap.size() && compare(this.heap.get(right), this.heap.get(minIndex)) < 0) {
 			minIndex = right;
 		}
 

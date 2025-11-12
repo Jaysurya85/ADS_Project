@@ -12,7 +12,7 @@ public class PairingHeap {
 	// ================== Public Functions of Pairing Heap====================
 
 	public boolean isEmpty() {
-		return root == null;
+		return this.root == null;
 	}
 
 	public int compare(Flight flight1, Flight flight2) {
@@ -27,18 +27,18 @@ public class PairingHeap {
 
 	public PairingHeapNode push(Flight flight) {
 		PairingHeapNode node = new PairingHeapNode(flight);
-		root = meld(root, node);
+		this.root = meld(this.root, node);
 		return node;
 	}
 
 	public Flight pop() {
-		if (root == null)
+		if (this.root == null)
 			return null;
 
-		Flight maxFlight = root.getFlight();
-		root = mergePairs(root.getChild());
-		if (root != null) {
-			root.setPrev(null);
+		Flight maxFlight = this.root.getFlight();
+		this.root = mergePairs(this.root.getChild());
+		if (this.root != null) {
+			this.root.setPrev(null);
 		}
 		return maxFlight;
 	}
@@ -48,7 +48,7 @@ public class PairingHeap {
 			return;
 		node.getFlight().setPriority(newPriority);
 
-		if (node == root)
+		if (node == this.root)
 			return;
 
 		if (node.getPrev() != null) {
@@ -64,14 +64,14 @@ public class PairingHeap {
 
 		node.setSibling(null);
 		node.setPrev(null);
-		root = meld(root, node);
+		this.root = meld(this.root, node);
 	}
 
 	public void erase(PairingHeapNode node) {
 		if (node == null)
 			return;
 
-		if (node == root) {
+		if (node == this.root) {
 			pop();
 			return;
 		}
@@ -87,7 +87,7 @@ public class PairingHeap {
 
 		PairingHeapNode mergedChildren = mergePairs(node.getChild());
 		if (mergedChildren != null) {
-			root = meld(root, mergedChildren);
+			this.root = meld(this.root, mergedChildren);
 		}
 	}
 

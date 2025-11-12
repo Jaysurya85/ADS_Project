@@ -1,4 +1,3 @@
-
 import models.*;
 import dataStructures.*;
 import java.util.*;
@@ -26,38 +25,42 @@ public class Scheduler {
 	}
 
 	public void initialize(int runwayCount) {
+
+		// Checking for invalid scenarios
 		if (runwayCount <= 0) {
 			this.output.println("Invalid input. Please provide a valid number of runways.");
 			return;
 		}
 
+		// Adding all the runways
 		for (int i = 1; i <= runwayCount; i++) {
 			this.runways.insert(new Runway(i, 0));
 		}
+
 		this.output.println(runwayCount + " Runways are now available");
 	}
 
 	public void submitFlight(int flightID, int airlineID, int submitTime, int priority, int duration) {
+
+		// Updating the current time
 		updateCurrentTime(submitTime);
 
-		if (activeFlights.containsKey(flightID)) {
+		if (this.activeFlights.containsKey(flightID)) {
 			this.output.println("Duplicate FlightID");
 			return;
 		}
 
+		// Adding the flight in all the datastructures
 		Flight flight = new Flight(flightID, airlineID, submitTime, priority, duration);
-
-		activeFlights.put(flightID, flight);
-
-		if (!airlineIndex.containsKey(airlineID)) {
-			airlineIndex.put(airlineID, new HashSet<>());
+		this.activeFlights.put(flightID, flight);
+		if (!this.airlineIndex.containsKey(airlineID)) {
+			this.airlineIndex.put(airlineID, new HashSet<>());
 		}
-		airlineIndex.get(airlineID).add(flightID);
+		this.airlineIndex.get(airlineID).add(flightID);
+		PairingHeapNode node = this.pendingFlights.push(flight);
+		this.handles.put(flightID, node);
 
-		PairingHeapNode node = pendingFlights.push(flight);
-		handles.put(flightID, node);
-
-		// Schedule this flight
+		// Schedule this flight and updating the ETAs if required
 		ArrayList<String> updatedETAs = rescheduleFlights();
 		this.output.println("Flight " + flightID + " scheduled - ETA: " + flight.getEndTime());
 		printAllChangedETAs(updatedETAs);
@@ -65,67 +68,74 @@ public class Scheduler {
 	}
 
 	public void cancelFlight(int flightID, int currentTime) {
+
+		// Updating the current time
 		updateCurrentTime(currentTime);
 
 		if (!this.activeFlights.containsKey(flightID)) {
 			this.output.println("Flight " + flightID + " does not exist");
 			return;
 		}
-
-		Flight flight = activeFlights.get(flightID);
+		Flight flight = this.activeFlights.get(flightID);
 
 		if (flight.getLifeCycleState() == StatusType.IN_PROGRESS ||
 				flight.getLifeCycleState() == StatusType.COMPLETED) {
-			output.println("Cannot cancel. Flight " + flightID + " has already departed");
+			this.output.println("Cannot cancel. Flight " + flightID + " has already departed");
 			return;
 		}
 
 		// Remove from all data structures
-		activeFlights.remove(flightID);
-		HashSet<Integer> airlineFlights = airlineIndex.get(flight.getAirlineID());
+		this.activeFlights.remove(flightID);
+		HashSet<Integer> airlineFlights = this.airlineIndex.get(flight.getAirlineID());
 		if (airlineFlights != null) {
 			airlineFlights.remove(flightID);
 		}
-		PairingHeapNode node = handles.get(flightID);
+		PairingHeapNode node = this.handles.get(flightID);
 		if (node != null) {
-			pendingFlights.erase(node);
-			handles.remove(flightID);
+			this.pendingFlights.erase(node);
+			this.handles.remove(flightID);
 		}
+
+		// Updated the ETAs
 		ArrayList<String> updatedETAs = rescheduleFlights();
-		output.println("Flight " + flightID + " has been canceled");
+
+		// Printing all the output
+		this.output.println("Flight " + flightID + " has been canceled");
 		printAllChangedETAs(updatedETAs);
 	}
 
 	public void reprioritize(int flightID, int currentTime, int newPriority) {
+
+		// Updating the current time
 		updateCurrentTime(currentTime);
 
-		Flight flight = activeFlights.get(flightID);
+		Flight flight = this.activeFlights.get(flightID);
 		if (flight == null) {
-			output.println("Flight " + flightID + " not found");
+			this.output.println("Flight " + flightID + " not found");
 			return;
 		}
-
 		if (flight.getLifeCycleState() == StatusType.IN_PROGRESS ||
 				flight.getLifeCycleState() == StatusType.COMPLETED) {
-			output.println("Cannot reprioritize. Flight " + flightID + " has already departed");
+			this.output.println("Cannot reprioritize. Flight " + flightID + " has already departed");
 			return;
 		}
 
 		int oldPriority = flight.getPriority();
 		flight.setPriority(newPriority);
-
-		PairingHeapNode node = handles.get(flightID);
+		PairingHeapNode node = this.handles.get(flightID);
 		if (node != null) {
 			if (newPriority > oldPriority) {
-				pendingFlights.increaseKey(node, newPriority);
+				// For increase increaseKey
+				this.pendingFlights.increaseKey(node, newPriority);
 			} else {
 				// For decrease, remove and re-insert
-				pendingFlights.erase(node);
-				PairingHeapNode newNode = pendingFlights.push(flight);
-				handles.put(flightID, newNode);
+				this.pendingFlights.erase(node);
+				PairingHeapNode newNode = this.pendingFlights.push(flight);
+				this.handles.put(flightID, newNode);
 			}
 		}
 
+		// Rescheduling unsatisfied flights
 		ArrayList<String> updatedETAs = rescheduleFlights();
 		this.output.println("Priority of Flight " + flightID + " has been updated to " + newPriority);
 		printAllChangedETAs(updatedETAs);
@@ -133,6 +143,8 @@ public class Scheduler {
 	}
 
 	public void addRunways(int count, int currentTime) {
+
+		// Updating the current time
 		updateCurrentTime(currentTime);
 
 		if (count <= 0) {
@@ -140,10 +152,13 @@ public class Scheduler {
 			return;
 		}
 
-		int currentRunwayCount = runways.getRunwayCount();
+		// Adding new runways
+		int currentRunwayCount = this.runways.getRunwayCount();
 		for (int i = 0; i < count; i++) {
-			runways.insert(new Runway(currentRunwayCount + i + 1, currentTime));
+			this.runways.insert(new Runway(currentRunwayCount + i + 1, currentTime));
 		}
+
+		// Rescheduling the flights
 		ArrayList<String> updatedETAs = rescheduleFlights();
 		this.output.println("Additional " + count + " Runways are now available");
 		printAllChangedETAs(updatedETAs);
@@ -151,6 +166,8 @@ public class Scheduler {
 	}
 
 	public void groundHold(int airlineLow, int airlineHigh, int currentTime) {
+
+		// Updating the curren time
 		updateCurrentTime(currentTime);
 
 		if (airlineHigh < airlineLow) {
@@ -158,12 +175,13 @@ public class Scheduler {
 			return;
 		}
 
+		// Fetching all the flights with airlineID between low and high
 		ArrayList<Integer> toRemove = new ArrayList<>();
 		for (int airlineID = airlineLow; airlineID <= airlineHigh; airlineID++) {
-			HashSet<Integer> flights = airlineIndex.get(airlineID);
+			HashSet<Integer> flights = this.airlineIndex.get(airlineID);
 			if (flights != null) {
 				for (int flightID : flights) {
-					Flight flight = activeFlights.get(flightID);
+					Flight flight = this.activeFlights.get(flightID);
 					if (flight != null &&
 							(flight.getLifeCycleState() == StatusType.PENDING ||
 									flight.getLifeCycleState() == StatusType.SCHEDULED)) {
@@ -173,20 +191,21 @@ public class Scheduler {
 			}
 		}
 
+		// Deleting all the flights with those flightID
 		for (int flightID : toRemove) {
-			Flight flight = activeFlights.get(flightID);
+			Flight flight = this.activeFlights.get(flightID);
 			if (flight != null) {
-				activeFlights.remove(flightID);
-				HashSet<Integer> airlineFlights = airlineIndex.get(flight.getAirlineID());
+				this.activeFlights.remove(flightID);
+				HashSet<Integer> airlineFlights = this.airlineIndex.get(flight.getAirlineID());
 				if (airlineFlights != null) {
 					airlineFlights.remove(flightID);
 				}
-				PairingHeapNode node = handles.get(flightID);
+				PairingHeapNode node = this.handles.get(flightID);
 				if (node != null) {
-					pendingFlights.erase(node);
-					handles.remove(flightID);
+					this.pendingFlights.erase(node);
+					this.handles.remove(flightID);
 				}
-				timetable.remove(flight);
+				this.timetable.remove(flight);
 			}
 		}
 
@@ -199,7 +218,7 @@ public class Scheduler {
 	public void printActive() {
 		ArrayList<Flight> flights = new ArrayList<>();
 
-		for (Flight flight : activeFlights.values()) {
+		for (Flight flight : this.activeFlights.values()) {
 			if (flight.getLifeCycleState() != StatusType.COMPLETED) {
 				flights.add(flight);
 			}
@@ -212,18 +231,20 @@ public class Scheduler {
 
 		flights.sort((a, b) -> Integer.compare(a.getFlightID(), b.getFlightID()));
 		for (Flight flight : flights) {
-			output.println("[flight" + flight.getFlightID() + ", airline" + flight.getAirlineID() +
-					", runway" + flight.getRunwayID() + ", start" + flight.getStartTime() +
-					", ETA" + flight.getEndTime() + "]");
+			this.output.println(flight);
+			// this.output.println("[flight" + flight.getFlightID() + ", airline" +
+			// flight.getAirlineID() +
+			// ", runway" + flight.getRunwayID() + ", start" + flight.getStartTime() +
+			// ", ETA" + flight.getEndTime() + "]");
 		}
 	}
 
 	public void printSchedule(int endTime1, int endTime2) {
 		ArrayList<Flight> scheduledFlights = new ArrayList<>();
 
-		for (Flight flight : activeFlights.values()) {
+		for (Flight flight : this.activeFlights.values()) {
 			if (flight.getLifeCycleState() == StatusType.SCHEDULED &&
-					flight.getStartTime() > currentTime &&
+					flight.getStartTime() > this.currentTime &&
 					flight.getEndTime() >= endTime1 &&
 					flight.getEndTime() <= endTime2) {
 				scheduledFlights.add(flight);
@@ -243,7 +264,7 @@ public class Scheduler {
 		});
 
 		for (Flight flight : scheduledFlights) {
-			output.println("[" + flight.getFlightID() + "]");
+			this.output.println("[" + flight.getFlightID() + "]");
 		}
 	}
 
@@ -259,9 +280,9 @@ public class Scheduler {
 	// Internal functions
 
 	private void updateCurrentTime(int newTime) {
-		if (newTime < currentTime)
+		if (newTime < this.currentTime)
 			return;
-		currentTime = newTime;
+		this.currentTime = newTime;
 
 		// Need to complete all the flights between the old current time and the new
 		// time
@@ -275,16 +296,16 @@ public class Scheduler {
 	}
 
 	private void settleCompletions() {
-		ArrayList<Flight> completed = timetable.popAllCompleted(currentTime);
+		ArrayList<Flight> completed = this.timetable.popAllCompleted(currentTime);
 
 		for (Flight flight : completed) {
 			flight.setLifeCycleState(StatusType.COMPLETED);
-			output.println("Flight " + flight.getFlightID() + " has landed at time " + flight.getEndTime());
+			this.output.println("Flight " + flight.getFlightID() + " has landed at time " + flight.getEndTime());
 
-			activeFlights.remove(flight.getFlightID());
-			handles.remove(flight.getFlightID());
+			this.activeFlights.remove(flight.getFlightID());
+			this.handles.remove(flight.getFlightID());
 
-			HashSet<Integer> airlineFlights = airlineIndex.get(flight.getAirlineID());
+			HashSet<Integer> airlineFlights = this.airlineIndex.get(flight.getAirlineID());
 			if (airlineFlights != null) {
 				airlineFlights.remove(flight.getFlightID());
 			}
@@ -292,7 +313,7 @@ public class Scheduler {
 	}
 
 	private void promoteFlights() {
-		for (Flight flight : activeFlights.values()) {
+		for (Flight flight : this.activeFlights.values()) {
 			if (flight.getLifeCycleState() == StatusType.SCHEDULED &&
 					flight.getStartTime() <= currentTime &&
 					flight.getEndTime() > currentTime) {
@@ -302,44 +323,42 @@ public class Scheduler {
 	}
 
 	private ArrayList<String> rescheduleFlights() {
-		ArrayList<Flight> toReschedule = new ArrayList<>();
 
-		// Store OLD ETAs before rescheduling (only for flights that were already
-		// scheduled)
+		ArrayList<Flight> toReschedule = new ArrayList<>();
 		HashMap<Integer, Integer> oldEndTimes = new HashMap<>();
 
 		// Collect all scheduled flights that haven't started yet
-		for (Flight flight : activeFlights.values()) {
-			if (flight.getLifeCycleState() == StatusType.SCHEDULED && flight.getStartTime() > currentTime) {
+		for (Flight flight : this.activeFlights.values()) {
+			if (flight.getLifeCycleState() == StatusType.SCHEDULED && flight.getStartTime() > this.currentTime) {
 				toReschedule.add(flight);
 				oldEndTimes.put(flight.getFlightID(), flight.getEndTime());
 			}
 		}
 
 		// Collect all pending flights
-		while (!pendingFlights.isEmpty()) {
-			Flight f = pendingFlights.pop();
-			toReschedule.add(f);
-			handles.remove(f.getFlightID());
+		while (!this.pendingFlights.isEmpty()) {
+			Flight flight = this.pendingFlights.pop();
+			toReschedule.add(flight);
+			handles.remove(flight.getFlightID());
 		}
 
 		if (toReschedule.isEmpty())
 			return new ArrayList<>();
 
-		// Sort by priority (DESCENDING), then submitTime (ASCENDING), then flightID
-		// (ASCENDING)
-		toReschedule.sort((f1, f2) -> {
-			if (f1.getPriority() != f2.getPriority()) {
-				return Integer.compare(f2.getPriority(), f1.getPriority()); // Higher priority first
+		toReschedule.sort((flight1, flight2) -> {
+			if (flight1.getPriority() != flight2.getPriority()) {
+				return Integer.compare(flight2.getPriority(), flight1.getPriority());
 			}
-			if (f1.getSubmitTime() != f2.getSubmitTime()) {
-				return Integer.compare(f1.getSubmitTime(), f2.getSubmitTime()); // Earlier submit first
+			if (flight1.getSubmitTime() != flight2.getSubmitTime()) {
+				return Integer.compare(flight1.getSubmitTime(), flight2.getSubmitTime());
 			}
-			return Integer.compare(f1.getFlightID(), f2.getFlightID()); // Lower ID first
+			return Integer.compare(flight1.getFlightID(), flight2.getFlightID());
 		});
 
+		// Rebuilding the time table and runways
 		rebuildTimeTableAndRunway();
 
+		// Greedily assigning according to the new ETAs
 		ArrayList<String> endTimeUpdates = greedyAssignment(toReschedule, oldEndTimes);
 
 		return endTimeUpdates;
@@ -423,385 +442,3 @@ public class Scheduler {
 		}
 	}
 }
-
-// import models.*;
-// import dataStructures.*;
-// import java.util.*;
-// import java.io.PrintWriter;
-//
-// public class Scheduler {
-// private RunwayMinHeap runways;
-// private PairingHeap pendingFlights;
-// private TimetableMinHeap timetable;
-// private HashMap<Integer, Flight> activeFlights;
-// private HashMap<Integer, HashSet<Integer>> airlineIndex;
-// private HashMap<Integer, PairingHeapNode> handles;
-// private int currentTime;
-// private PrintWriter output;
-//
-// public Scheduler(PrintWriter output) {
-// this.runways = new RunwayMinHeap();
-// this.pendingFlights = new PairingHeap();
-// this.timetable = new TimetableMinHeap();
-// this.activeFlights = new HashMap<>();
-// this.airlineIndex = new HashMap<>();
-// this.handles = new HashMap<>();
-// this.currentTime = 0;
-// this.output = output;
-// }
-//
-// public void initialize(int runwayCount) {
-// if (runwayCount < 0) {
-// this.output.println("Invalid input. Please provide a valid number of
-// runways.");
-// return;
-// }
-//
-// for (int i = 0; i < runwayCount; i++) {
-// this.runways.insert(new Runway(i + 1, 0));
-// }
-// this.output.println(runwayCount + " Runways are now available");
-// }
-//
-// public void submitFlight(int flightID, int airlineID, int submitTime, int
-// priority, int duration) {
-// advanceTime(submitTime);
-//
-// if (activeFlights.containsKey(flightID)) {
-// this.output.println("Duplicate FlightID");
-// return;
-// }
-//
-// Flight flight = new Flight(flightID, airlineID, submitTime, priority,
-// duration);
-//
-// System.out.println("Submitting flight " + flight);
-// activeFlights.put(flightID, flight);
-//
-// if (!airlineIndex.containsKey(airlineID)) {
-// airlineIndex.put(airlineID, new HashSet<>());
-// }
-// airlineIndex.get(airlineID).add(flightID);
-//
-// PairingHeapNode node = pendingFlights.push(flight);
-// handles.put(flightID, node);
-//
-// // Schedule this flight immediately
-// rescheduleFlights();
-//
-// output.println("Flight " + flightID + " scheduled - ETA: " +
-// flight.getEndTime());
-// }
-//
-// public void cancelFlight(int flightID, int currentTime) {
-// advanceTime(currentTime);
-//
-// if (!this.activeFlights.containsKey(flightID)) {
-// this.output.println("Flight " + flightID + " does not exist");
-// return;
-// }
-//
-// Flight flight = activeFlights.get(flightID);
-//
-// if (flight.getLifeCycleState() == StatusType.IN_PROGRESS ||
-// flight.getLifeCycleState() == StatusType.COMPLETED) {
-// output.println("Cannot cancel flight " + flightID + " - already departed");
-// return;
-// }
-//
-// // Remove from all data structures
-// activeFlights.remove(flightID);
-// HashSet<Integer> airlineFlights = airlineIndex.get(flight.getAirlineID());
-// if (airlineFlights != null) {
-// airlineFlights.remove(flightID);
-// }
-// PairingHeapNode node = handles.get(flightID);
-// if (node != null) {
-// pendingFlights.erase(node);
-// handles.remove(flightID);
-// }
-// output.println("Flight " + flightID + " has been canceled");
-//
-// rescheduleFlights();
-// }
-//
-// public void reprioritize(int flightID, int currentTime, int newPriority) {
-// advanceTime(currentTime);
-//
-// Flight flight = activeFlights.get(flightID);
-// if (flight == null) {
-// output.println("Flight " + flightID + " not found");
-// return;
-// }
-//
-// if (flight.getLifeCycleState() == StatusType.IN_PROGRESS ||
-// flight.getLifeCycleState() == StatusType.COMPLETED) {
-// output.println("Cannot reprioritize flight " + flightID + " - already
-// departed");
-// return;
-// }
-//
-// flight.setPriority(newPriority);
-// PairingHeapNode node = handles.get(flightID);
-// if (node != null) {
-// pendingFlights.increaseKey(node, newPriority);
-// }
-// this.output.println("Priority of Flight " + flightID + " has been updated to
-// " + newPriority);
-//
-// rescheduleFlights();
-// }
-//
-// public void addRunways(int count, int currentTime) {
-// advanceTime(currentTime);
-//
-// if (count <= 0) {
-// this.output.println("Invalid input. Please provide a valid number of
-// runways.");
-// return;
-// }
-//
-// int currentRunwayCount = runways.getRunwayCount();
-// for (int i = 0; i < count; i++) {
-// runways.insert(new Runway(currentRunwayCount + i + 1, currentTime));
-// }
-// this.output.println("Additional " + count + " Runways are now available");
-//
-// rescheduleFlights();
-// }
-//
-// public void groundHold(int airlineLow, int airlineHigh, int currentTime) {
-// advanceTime(currentTime);
-//
-// if (airlineHigh < airlineLow) {
-// this.output.println("Invalid input. Please provide a valid airline range.");
-// return;
-// }
-//
-// ArrayList<Integer> toCancel = new ArrayList<>();
-// for (int airlineID = airlineLow; airlineID <= airlineHigh; airlineID++) {
-// HashSet<Integer> flights = airlineIndex.get(airlineID);
-// if (flights != null) {
-// toCancel.addAll(new ArrayList<>(flights));
-// }
-// }
-//
-// for (int flightID : toCancel) {
-// Flight flight = activeFlights.get(flightID);
-// if (flight != null && (flight.getLifeCycleState() == StatusType.PENDING ||
-// flight.getLifeCycleState() == StatusType.SCHEDULED)) {
-// activeFlights.remove(flightID);
-// HashSet<Integer> airlineFlights = airlineIndex.get(flight.getAirlineID());
-// if (airlineFlights != null) {
-// airlineFlights.remove(flightID);
-// }
-// PairingHeapNode node = handles.get(flightID);
-// if (node != null) {
-// pendingFlights.erase(node);
-// handles.remove(flightID);
-// }
-// }
-// }
-// this.output.println(
-// "Flights of the airlines in the range [" + airlineLow + ", " + airlineHigh +
-// "] have been grounded");
-//
-// rescheduleFlights();
-// }
-//
-// public void printActive() {
-// ArrayList<Flight> flights = new ArrayList<>(activeFlights.values());
-//
-// if (flights.isEmpty()) {
-// this.output.println("No active flights");
-// return;
-// }
-//
-// flights.sort((a, b) -> Integer.compare(a.getFlightID(), b.getFlightID()));
-// for (Flight flight : flights) {
-// output.println("[flight" + flight.getFlightID() + ", airline" +
-// flight.getAirlineID() +
-// ", runway" + flight.getRunwayID() + ", start" + flight.getStartTime() +
-// ", ETA" + flight.getEndTime() + "]");
-// }
-// }
-//
-// public void printSchedule(int endTime1, int endTime2) {
-// ArrayList<Flight> scheduledFlights = new ArrayList<>();
-//
-// for (Flight flight : activeFlights.values()) {
-// if (flight.getLifeCycleState() == StatusType.SCHEDULED &&
-// flight.getEndTime() >= endTime1 && flight.getEndTime() <= endTime2) {
-// scheduledFlights.add(flight);
-// }
-// }
-//
-// if (scheduledFlights.isEmpty()) {
-// this.output.println("There are no flights in that time period");
-// return;
-// }
-//
-// scheduledFlights.sort((a, b) -> Integer.compare(a.getFlightID(),
-// b.getFlightID()));
-// for (Flight flight : scheduledFlights) {
-// output.println("[" + flight.getFlightID() + "]");
-// }
-// }
-//
-// public void tick(int time) {
-// advanceTime(time);
-// }
-//
-// // Internal functions
-//
-// private void advanceTime(int newTime) {
-// if (newTime < currentTime)
-// return;
-// currentTime = newTime;
-//
-// settleCompletions();
-// promoteFlights();
-// }
-//
-// private void settleCompletions() {
-// ArrayList<Flight> completed = timetable.popAllCompleted(currentTime);
-//
-// for (Flight flight : completed) {
-// flight.setLifeCycleState(StatusType.COMPLETED);
-// output.println("Flight " + flight.getFlightID() + " has landed at time " +
-// flight.getEndTime());
-//
-// activeFlights.remove(flight.getFlightID());
-// handles.remove(flight.getFlightID());
-//
-// HashSet<Integer> airlineFlights = airlineIndex.get(flight.getAirlineID());
-// if (airlineFlights != null) {
-// airlineFlights.remove(flight.getFlightID());
-// }
-// }
-// }
-//
-// private void promoteFlights() {
-// for (Flight flight : activeFlights.values()) {
-// if (flight.getLifeCycleState() == StatusType.SCHEDULED &&
-// flight.getStartTime() <= currentTime &&
-// flight.getEndTime() > currentTime) {
-// flight.setLifeCycleState(StatusType.IN_PROGRESS);
-// }
-// }
-// }
-//
-// private void rescheduleFlights() {
-// ArrayList<Flight> toReschedule = new ArrayList<>();
-//
-// // Store OLD ETAs before rescheduling (only for flights that were already
-// // scheduled)
-// HashMap<Integer, Integer> oldETAs = new HashMap<>();
-//
-// // Collect all scheduled flights that haven't started yet
-// for (Flight flight : activeFlights.values()) {
-// if (flight.getLifeCycleState() == StatusType.SCHEDULED &&
-// flight.getStartTime() > currentTime) {
-// toReschedule.add(flight);
-// oldETAs.put(flight.getFlightID(), flight.getEndTime());
-// }
-// }
-//
-// // Collect all pending flights
-// while (!pendingFlights.isEmpty()) {
-// Flight f = pendingFlights.pop();
-// toReschedule.add(f);
-// handles.remove(f.getFlightID());
-// }
-//
-// if (toReschedule.isEmpty())
-// return;
-//
-// // Sort by priority (DESCENDING), then submitTime (ASCENDING), then flightID
-// // (ASCENDING)
-// toReschedule.sort((f1, f2) -> {
-// if (f1.getPriority() != f2.getPriority()) {
-// return Integer.compare(f2.getPriority(), f1.getPriority()); // Higher
-// priority first
-// }
-// if (f1.getSubmitTime() != f2.getSubmitTime()) {
-// return Integer.compare(f1.getSubmitTime(), f2.getSubmitTime()); // Earlier
-// submit first
-// }
-// return Integer.compare(f1.getFlightID(), f2.getFlightID()); // Lower ID first
-// });
-//
-// // Rebuild timetable: keep only in-progress flights
-// TimetableMinHeap newTimetable = new TimetableMinHeap();
-// for (Flight flight : activeFlights.values()) {
-// if (flight.getLifeCycleState() == StatusType.IN_PROGRESS) {
-// newTimetable.insert(flight);
-// }
-// }
-// this.timetable = newTimetable;
-//
-// // Rebuild runway pool
-// ArrayList<Runway> runwayList = runways.getAllRunways();
-// runways.deleteAllRunways();
-//
-// // Initialize runway times to currentTime
-// HashMap<Integer, Integer> runwayTimes = new HashMap<>();
-// for (Runway runway : runwayList) {
-// runwayTimes.put(runway.getRunwayID(), currentTime);
-// }
-//
-// // Update runway times based on in-progress flights
-// for (Flight flight : activeFlights.values()) {
-// if (flight.getLifeCycleState() == StatusType.IN_PROGRESS) {
-// int rid = flight.getRunwayID();
-// runwayTimes.put(rid, flight.getEndTime());
-// }
-// }
-//
-// // Insert runways back with updated times
-// for (Runway runway : runwayList) {
-// runway.setNextFreeTime(runwayTimes.get(runway.getRunwayID()));
-// runways.insert(runway);
-// }
-//
-// ArrayList<String> endTimeUpdates = new ArrayList<>();
-//
-// // Greedy assignment
-// for (Flight flight : toReschedule) {
-// Runway runway = runways.extractMin();
-// int startTime = Math.max(currentTime, runway.getNextFreeTime());
-// int newEndTime = startTime + flight.getDuration();
-//
-// flight.setStartTime(startTime);
-// flight.setEndTime(newEndTime);
-// flight.setRunwayID(runway.getRunwayID());
-// flight.setLifeCycleState(StatusType.SCHEDULED);
-//
-// runway.setNextFreeTime(newEndTime);
-// runways.insert(runway);
-//
-// timetable.insert(flight);
-//
-// // Only report ETA changes for flights that were ALREADY scheduled
-// if (oldETAs.containsKey(flight.getFlightID())) {
-// int oldETA = oldETAs.get(flight.getFlightID());
-// if (oldETA != newEndTime) {
-// endTimeUpdates.add(flight.getFlightID() + ": " + newEndTime);
-// }
-// }
-// }
-//
-// if (!endTimeUpdates.isEmpty()) {
-// endTimeUpdates.sort((a, b) -> {
-// int id1 = Integer.parseInt(a.split(":")[0]);
-// int id2 = Integer.parseInt(b.split(":")[0]);
-// return Integer.compare(id1, id2);
-// });
-// output.println("Updated ETAs: [" + String.join(", ", endTimeUpdates) + "]");
-// }
-// }
-//
-// public void quit() {
-// output.println("Program Terminated!!");
-// }
-// }

@@ -20,39 +20,39 @@ public class RunwayMinHeap {
 	}
 
 	public void insert(Runway runway) {
-		heap.add(runway);
-		int index = heap.size() - 1;
-		positionMap.put(runway.getRunwayID(), index);
+		this.heap.add(runway);
+		int index = this.heap.size() - 1;
+		this.positionMap.put(runway.getRunwayID(), index);
 		heapifyUp(index);
 	}
 
 	public Runway extractMin() {
-		if (heap.isEmpty())
+		if (this.heap.isEmpty())
 			return null;
 
-		Runway minRunway = heap.get(0);
-		positionMap.remove(minRunway.getRunwayID());
+		Runway minRunway = this.heap.get(0);
+		this.positionMap.remove(minRunway.getRunwayID());
 
-		if (heap.size() == 1) {
-			heap.clear();
+		if (this.heap.size() == 1) {
+			this.heap.clear();
 			return minRunway;
 		}
 
-		heap.set(0, heap.get(heap.size() - 1));
-		heap.remove(heap.size() - 1);
-		positionMap.put(heap.get(0).getRunwayID(), 0);
+		this.heap.set(0, this.heap.get(this.heap.size() - 1));
+		this.heap.remove(this.heap.size() - 1);
+		this.positionMap.put(this.heap.get(0).getRunwayID(), 0);
 		heapifyDown(0);
 
 		return minRunway;
 	}
 
 	public ArrayList<Runway> getAllRunways() {
-		return new ArrayList<>(heap);
+		return new ArrayList<>(this.heap);
 	}
 
 	public void deleteAllRunways() {
-		heap.clear();
-		positionMap.clear();
+		this.heap.clear();
+		this.positionMap.clear();
 	}
 
 	// ================== Internal functions of Runway Min Heap====================
@@ -70,16 +70,16 @@ public class RunwayMinHeap {
 	}
 
 	private void swap(int i, int j) {
-		Runway temp = heap.get(i);
-		heap.set(i, heap.get(j));
-		heap.set(j, temp);
+		Runway temp = this.heap.get(i);
+		this.heap.set(i, this.heap.get(j));
+		this.heap.set(j, temp);
 
-		positionMap.put(heap.get(i).getRunwayID(), i);
-		positionMap.put(heap.get(j).getRunwayID(), j);
+		this.positionMap.put(this.heap.get(i).getRunwayID(), i);
+		this.positionMap.put(this.heap.get(j).getRunwayID(), j);
 	}
 
 	private void heapifyUp(int i) {
-		while (i > 0 && compare(heap.get(i), heap.get(parentInd(i))) < 0) {
+		while (i > 0 && compare(this.heap.get(i), this.heap.get(parentInd(i))) < 0) {
 			swap(i, parentInd(i));
 			i = parentInd(i);
 		}
@@ -90,10 +90,10 @@ public class RunwayMinHeap {
 		int left = leftChildInd(i);
 		int right = rightChildInd(i);
 
-		if (left < heap.size() && compare(heap.get(left), heap.get(minIndex)) < 0) {
+		if (left < this.heap.size() && compare(this.heap.get(left), this.heap.get(minIndex)) < 0) {
 			minIndex = left;
 		}
-		if (right < heap.size() && compare(heap.get(right), heap.get(minIndex)) < 0) {
+		if (right < this.heap.size() && compare(this.heap.get(right), this.heap.get(minIndex)) < 0) {
 			minIndex = right;
 		}
 
