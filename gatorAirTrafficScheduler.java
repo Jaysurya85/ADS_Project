@@ -1,11 +1,5 @@
 import java.io.*;
 
-import models.CommandData;
-import utils.CommandParser;
-
-/**
- * Main class for parsing input and executing scheduler operations
- */
 public class gatorAirTrafficScheduler {
 
 	public static void main(String[] args) {
@@ -27,7 +21,7 @@ public class gatorAirTrafficScheduler {
 			while ((line = reader.readLine()) != null) {
 				line = line.trim();
 				if (line.isEmpty() || line.startsWith("//")) {
-					continue; // Skip empty lines and comments
+					continue;
 				}
 
 				// Parse the command

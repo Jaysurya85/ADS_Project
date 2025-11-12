@@ -1,7 +1,3 @@
-package dataStructures;
-
-import models.*;
-
 public class PairingHeap {
 	private PairingHeapNode root;
 

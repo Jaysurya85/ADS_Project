@@ -1,5 +1,3 @@
-package models;
-
 public enum StatusType {
 	PENDING("PENDING"),
 	SCHEDULED("SCHEDULED"),

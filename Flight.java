@@ -1,5 +1,3 @@
-package models;
-
 public class Flight {
 	private int flightID;
 	private int airlineID;

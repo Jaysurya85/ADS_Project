@@ -1,5 +1,3 @@
-package models;
-
 public class Runway {
 	private int runwayID;
 	private int nextFreeTime;

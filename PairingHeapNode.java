@@ -1,5 +1,3 @@
-package models;
-
 public class PairingHeapNode {
 	private Flight flight;
 	private PairingHeapNode child;

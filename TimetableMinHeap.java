@@ -1,6 +1,4 @@
-package dataStructures;
 
-import models.*;
 import java.util.ArrayList;
 
 public class TimetableMinHeap {

@@ -1,8 +1,6 @@
-package dataStructures;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import models.*;
 
 public class RunwayMinHeap {
 	private ArrayList<Runway> heap;

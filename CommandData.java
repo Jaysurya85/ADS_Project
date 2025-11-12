@@ -1,5 +1,3 @@
-package models;
-
 public class CommandData {
 	private CommandType type;
 	private int[] params;
