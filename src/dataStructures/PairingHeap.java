@@ -9,6 +9,8 @@ public class PairingHeap {
 		this.root = null;
 	}
 
+	// ================== Public Functions of Pairing Heap====================
+
 	public boolean isEmpty() {
 		return root == null;
 	}
@@ -89,7 +91,7 @@ public class PairingHeap {
 		}
 	}
 
-	// Internal functions of Pairing Heap
+	// ================== Internal functions of Pairing Heap====================
 
 	private PairingHeapNode meld(PairingHeapNode a, PairingHeapNode b) {
 		if (a == null)

@@ -1,49 +1,44 @@
-System initialized with 2 runway(s)
-Flight 401 submitted at time 0, ETA: 4
-Flight 402 submitted at time 0, ETA: 5
-Flight 403 submitted at time 0, ETA: 7
-Updated ETAs: [Flight 403: ETA 7 -> 8]
-Updated ETAs: [Flight 403: ETA 8 -> 10]
-Flight 404 submitted at time 0, ETA: 12
-Scheduled flights between 3 and 9:
-Updated ETAs: [Flight 403: ETA 10 -> 13, Flight 404: ETA 12 -> 16]
-Flight 404 priority changed from 5 to 10
-Updated ETAs: [Flight 404: ETA 16 -> 17, Flight 403: ETA 13 -> 19]
-Updated ETAs: [Flight 404: ETA 17 -> 21, Flight 403: ETA 19 -> 22]
-1 runway(s) added at time 1
-Updated ETAs: [Flight 404: ETA 21 -> 5, Flight 403: ETA 22 -> 8]
-Updated ETAs: [Flight 403: ETA 8 -> 11]
-Updated ETAs: [Flight 403: ETA 11 -> 16]
-Flight 405 submitted at time 2, ETA: 13
-Updated ETAs: [Flight 405: ETA 13 -> 18, Flight 403: ETA 16 -> 21]
-Updated ETAs: [Flight 405: ETA 18 -> 24, Flight 403: ETA 21 -> 27]
-Flight 406 submitted at time 3, ETA: 26
-Updated ETAs: [Flight 405: ETA 24 -> 28, Flight 403: ETA 27 -> 30]
-Ground hold applied for airlines 16 to 16
-Updated ETAs: [Flight 403: ETA 30 -> 31]
-Updated ETAs: [Flight 405: ETA 28 -> 30, Flight 403: ETA 31 -> 33]
-Flight 405 cancelled at time 3
-Flight 401 has landed at time 4
-Updated ETAs: [Flight 403: ETA 33 -> 34]
-Updated ETAs: [Flight 403: ETA 34 -> 36]
-Updated ETAs: [Flight 403: ETA 36 -> 39]
-Flight 407 submitted at time 4, ETA: 36
-Updated ETAs: [Flight 407: ETA 36 -> 37, Flight 403: ETA 39 -> 40]
-Flight 407 priority changed from 6 to 9
-Updated ETAs: [Flight 407: ETA 37 -> 39, Flight 403: ETA 40 -> 42]
-Updated ETAs: [Flight 407: ETA 39 -> 42, Flight 403: ETA 42 -> 45]
-Updated ETAs: [Flight 407: ETA 42 -> 43, Flight 403: ETA 45 -> 48]
-Flight 408 submitted at time 4, ETA: 45
-Flight 402 has landed at time 5
-Updated ETAs: [Flight 407: ETA 43 -> 45, Flight 408: ETA 45 -> 47, Flight 403: ETA 48 -> 50]
-1 runway(s) added at time 5
-Updated ETAs: [Flight 407: ETA 45 -> 8, Flight 408: ETA 47 -> 10, Flight 403: ETA 50 -> 13]
-Active flights:
-  Flight 403 (Airline 13, Priority 6, State: SCHEDULED, ETA: 13)
-  Flight 404 (Airline 14, Priority 10, State: IN_PROGRESS, ETA: 5)
-  Flight 407 (Airline 17, Priority 9, State: SCHEDULED, ETA: 8)
-  Flight 408 (Airline 18, Priority 8, State: SCHEDULED, ETA: 10)
-Updated ETAs: [Flight 403: ETA 13 -> 16]
-Scheduled flights between 6 and 12:
-  Flight 407 (Airline 17, Priority 9, State: SCHEDULED, ETA: 8)
-System shutting down. All operations completed.
+2 Runways are now available
+Flight 601 scheduled - ETA: 5
+Flight 602 scheduled - ETA: 7
+Flight 603 scheduled - ETA: 8
+Flight 604 scheduled - ETA: 11
+[603]
+[604]
+Cannot reprioritize. Flight 602 has already departed
+Cannot reprioritize. Flight 602 has already departed
+Invalid input. Please provide a valid number of runways.
+Additional 1 Runways are now available
+Updated ETAs: [603: 4, 604: 8]
+Flight 605 scheduled - ETA: 10
+Updated ETAs: [604: 9]
+Flight 606 scheduled - ETA: 6
+Updated ETAs: [604: 10, 605: 11]
+Flight 607 scheduled - ETA: 16
+Flights of the airlines in the range [33, 36] have been grounded
+Flight 605 does not exist
+Flight 603 has landed at time 4
+Flight 601 has landed at time 5
+Flight 610 scheduled - ETA: 18
+Flight 602 has landed at time 7
+Flight 611 scheduled - ETA: 8
+Flight 612 scheduled - ETA: 8
+Flight 613 scheduled - ETA: 9
+[613]
+Flight 611 has landed at time 8
+Flight 612 has landed at time 8
+Flight 608 scheduled - ETA: 13
+Flight 609 scheduled - ETA: 14
+Cannot reprioritize. Flight 608 has already departed
+Additional 1 Runways are now available
+Updated ETAs: [609: 13]
+[flight608, airline40, runway3, start8, ETA13]
+[flight609, airline41, runway4, start8, ETA13]
+[flight610, airline37, runway1, start6, ETA18]
+[flight613, airline39, runway2, start8, ETA9]
+Flight 613 has landed at time 9
+Flight 608 has landed at time 13
+Flight 609 has landed at time 13
+Flight 610 has landed at time 18
+There are no flights in that time period
+Program Terminated!!

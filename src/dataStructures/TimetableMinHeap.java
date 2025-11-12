@@ -27,6 +27,35 @@ public class TimetableMinHeap {
 		this.heap.clear();
 	}
 
+	public boolean remove(Flight flight) {
+		if (heap.isEmpty())
+			return false;
+
+		int index = -1;
+		for (int i = 0; i < heap.size(); i++) {
+			if (heap.get(i).getFlightID() == flight.getFlightID()) {
+				index = i;
+				break;
+			}
+		}
+		if (index == -1)
+			return false;
+
+		int lastIndex = heap.size() - 1;
+		if (index != lastIndex) {
+			swap(index, lastIndex);
+		}
+		heap.remove(lastIndex);
+
+		// restore heap property (both directions possible)
+		if (index < heap.size()) {
+			heapifyUp(index);
+			heapifyDown(index);
+		}
+
+		return true;
+	}
+
 	// Internal functions of Binary Heap
 
 	private Flight extractMin() {
